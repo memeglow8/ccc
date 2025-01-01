@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Access - {{ config['TOKEN_NAME'] }}</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <style>
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        body {
+            background: linear-gradient(135deg, #000000, #1a1a1a, #000000);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: #ffffff;
+            font-family: 'Comic Sans MS', 'Arial', sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .floating-emoji {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0;
+            animation: floatUp 10s linear forwards;
+            font-size: 2em;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.7;
+            }
+            90% {
+                opacity: 0.7;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(359deg);
+                opacity: 0;
+            }
+        }
+        .token-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 600px;
+            margin: 2rem auto;
+        }
+        .token-icon {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(45deg, #000000, #8A2BE2);
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 2rem;
+            font-size: 3rem;
+            color: white;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .verify-btn {
+            background: linear-gradient(45deg, #2e7d32, #1b5e20);
+            border: none;
+            padding: 1rem 3rem;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 5px 15px rgba(138, 43, 226, 0.4);
+        }
+        .verify-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(138, 43, 226, 0.6);
+            background: linear-gradient(45deg, #6A1B9A, #8A2BE2);
+            color: white;
+            text-decoration: none;
+        }
+        @media (max-width: 576px) {
+            .token-container {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+            .token-icon {
+                width: 100px;
+                height: 100px;
+                font-size: 2.5rem;
+            }
+            .verify-btn {
+                padding: 0.8rem 2rem;
+                font-size: 1.1rem;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            .lead {
+                font-size: 1.1rem;
+            }
+            .text-muted small {
+                font-size: 0.9rem;
+            }
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 12px 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            font-size: 0.9rem;
+            max-width: 280px;
+        }
+        .notification.show {
+            transform: translateX(0);
+        }
+        .notification-icon {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container vh-100 d-flex align-items-center justify-content-center">
+        <div class="token-container text-center">
+            <div class="token-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <h1 class="mb-4">Verification Required</h1>
+            <p class="lead mb-4">To access full features of {{ config['TOKEN_NAME'] }}, please verify your account.</p>
+            <a href="/verify?verify=true" class="btn verify-btn text-white">
+                <i class="fab fa-twitter mr-2"></i>Verify with Twitter
+            </a>
+            <p class="mt-4 text-muted">
+                <small>Your account will be securely verified through Twitter</small>
+            </p>
+        </div>
+    </div>
+
+    <div id="notification" class="notification">
+        <div class="notification-icon">
+            <i class="fas fa-check"></i>
+        </div>
+        <div class="notification-content">
+            <strong id="notification-username"></strong> just verified their eligibility!
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+    <script>
+        const emojis = ['💰', '🤑', '💵', '💸', '🏦', '💎', '👑', '💫', '✨', '🌟'];
+        
+        function createFloatingEmoji() {
+            const emoji = document.createElement('div');
+            emoji.className = 'floating-emoji';
+            emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            
+            // Random position and size
+            const size = Math.random() * (3 - 1) + 1;
+            emoji.style.fontSize = `${size}em`;
+            emoji.style.left = `${Math.random() * 100}vw`;
+            
+            document.body.appendChild(emoji);
+            
+            // Remove emoji after animation completes
+            emoji.addEventListener('animationend', () => {
+                emoji.remove();
+            });
+        }
+
+        // Create new emoji every 800ms
+        setInterval(createFloatingEmoji, 800);
+    </script>
+</body>
+</html>

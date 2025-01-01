@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script>
+        // Redirect to the dashboard after 5 seconds
+        setTimeout(function() {
+            window.location.href = "{{ url_for('dashboard') }}";
+        }, 5000);
+    </script>
+</head>
+<body class="bg-light">
+    <div class="container d-flex flex-column justify-content-center align-items-center vh-100">
+        <h2 class="text-center mb-4">{{ message }}</h2>
+        <p class="text-center">You will be redirected to your dashboard shortly.</p>
+    </div>
+</body>
+</html>

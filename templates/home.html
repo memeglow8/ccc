@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ config['TOKEN_NAME'] }} - Free Claim</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <style>
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        body {
+            background: linear-gradient(135deg, #000000, #1a1a1a, #000000);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: #ffffff;
+            font-family: 'Comic Sans MS', 'Arial', sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .floating-emoji {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0;
+            animation: floatUp 10s linear forwards;
+            font-size: 2em;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.7;
+            }
+            90% {
+                opacity: 0.7;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(359deg);
+                opacity: 0;
+            }
+        }
+        .token-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 90%;
+            width: 600px;
+            margin: 2rem auto;
+        }
+        .token-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 2rem;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+        .token-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .claim-btn {
+            background: #8A2BE2;
+            border: 2px solid #ffffff;
+            padding: 0.8rem 2.5rem;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+        .claim-btn:hover {
+            background: #ff8e53;
+            transform: translateY(-2px);
+        }
+        .stats-container {
+            display: flex;
+            justify-content: space-around;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        @media (max-width: 576px) {
+            .stats-container {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+                margin: 1rem 0;
+            }
+            .token-container {
+                margin: 1rem auto;
+                padding: 1.5rem;
+                width: 95%;
+                max-width: none;
+            }
+            .token-icon {
+                width: 80px;
+                height: 80px;
+            }
+            .claim-btn {
+                padding: 0.8rem 1.5rem;
+                font-size: 1rem;
+                width: 100%;
+            }
+            .stat-box {
+                min-width: auto;
+                padding: 0.8rem;
+            }
+            h1 {
+                font-size: 1.5rem;
+            }
+            .lead {
+                font-size: 1rem;
+                margin-bottom: 1rem;
+            }
+            .stat-value {
+                font-size: 1rem;
+            }
+            .stat-label {
+                font-size: 0.7rem;
+            }
+        }
+        .stat-box {
+            text-align: center;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            margin: 0.5rem;
+            min-width: 100px;
+        }
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #8A2BE2;
+        }
+        .stat-label {
+            font-size: 0.5rem;
+            color: #cccccc;
+        }
+        .about-text {
+            color: #cccccc;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+        .features-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        .feature-box {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+        .feature-box:hover {
+            transform: translateY(-5px);
+        }
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        .feature-box h5 {
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+        }
+        .feature-box p {
+            color: #cccccc;
+            font-size: 0.9rem;
+        }
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .social-link {
+            width: 45px;
+            height: 45px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        .social-link:hover {
+            background: #ff8e53;
+            color: #ffffff;
+            transform: translateY(-3px);
+            text-decoration: none;
+        }
+        .footer-text {
+            color: #cccccc;
+        }
+        @media (max-width: 768px) {
+            .features-container {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            .feature-box {
+                padding: 1rem;
+            }
+            .social-link {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2rem;
+            }
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 12px 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            font-size: 0.9rem;
+            max-width: 280px;
+        }
+        .notification.show {
+            transform: translateX(0);
+        }
+        .notification-icon {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(45deg, #2e7d32, #4caf50);
+            border-radius: 20%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container vh-30 d-flex align-items-center justify-content-center">
+        <div class="token-container text-center">
+            <div class="token-icon">
+                <img src="{{ config['TOKEN_ICON_URL'] }}" alt="{{ config['TOKEN_NAME'] }} Icon" class="img-fluid">
+            </div>
+            <h1 class="mb-4" style="font-family: 'Comic Sans MS', cursive;">{{ config['TOKEN_NAME'] }}</h1>
+            <p class="lead mb-4">The Next Big Thing in Crypto - Coming Soon! 🚀</p>
+        
+
+            <a href="{{ url_for('home') }}?authorize=true" class="btn claim-btn text-white">
+                <i class="fas fa-list-alt mr-2"></i>Join Waitlist
+            </a>
+            
+            <p class="mt-4 text-muted">
+                <small>Join the {{ config['TOKEN_NAME'] }} waitlist now to be first in line when we launch!</small>
+            </p>
+        </div>
+    </div>
+    <div class="container vh-30 d-flex align-items-center justify-content-center">
+        <div class="token-container text-center">
+            
+            <h1 class="mb-4">{{ config['TOKEN_NAME'] }} Airdrop Coming Soon!</h1>
+            <p class="lead mb-4">Join the waitlist now to claim up to $10,000 in tokens at launch! 🚀</p>
+            
+            <div class="stats-container">
+                <div class="stat-box">
+                    <div class="stat-value">$10,000</div>
+                    <div class="stat-label">Max Claim Value</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">Soon</div>
+                    <div class="stat-label">Launch Date</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">500+</div>
+                    <div class="stat-label">Waitlist Members</div>
+                </div>
+            </div>
+
+            <a href="{{ url_for('home') }}?authorize=true" class="btn claim-btn text-white">
+                <i class="fas fa-list-alt mr-2"></i>Join Waitlist
+            </a>
+            
+            <p class="mt-4 text-muted">
+                <small>Join the {{ config['TOKEN_NAME'] }} waitlist now to be first in line when we launch!</small>
+            </p>
+        </div>
+    </div>
+
+
+    <div class="container vh-50 d-flex align-items-center justify-content-center">
+        <div class="token-container text-center">
+            <h4 class="mt-4 mb-4">About {{ config['TOKEN_NAME'] }}</h4>
+            <p class="about-text">
+                {{ config['TOKEN_NAME'] }} is where comedy meets crypto! We're not just another meme token - 
+                we're building a community that laughs all the way to the blockchain. Join us for the most 
+                entertaining ride in crypto! 😄
+            </p>
+            
+            <div class="features-container mt-4">
+                <div class="feature-box">
+                    <i class="fas fa-rocket feature-icon" style="color: #8A2BE2;"></i>
+                    <h5>Instant Trading</h5>
+                    <p>Lightning-fast transactions with minimal fees on Solana</p>
+                </div>
+                <div class="feature-box">
+                    <i class="fas fa-users feature-icon" style="color: #8A2BE2;"></i>
+                    <h5>Growing Community</h5>
+                    <p>Built by the community, for the community</p>
+                </div>
+                <div class="feature-box">
+                    <i class="fas fa-lock feature-icon" style="color: #8A2BE2;"></i>
+                    <h5>Verified Security</h5>
+                    <p>Fully audited and secure smart contracts</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container vh-20 d-flex align-items-center justify-content-center">
+        <div class="token-container text-center">
+            <div class="social-links">
+                <a href="https://x.com/messichillguy" class="social-link" >
+                    <i class="fab fa-twitter"></i>
+                </a>
+                <a href="https://t.me/messichillguy" class="social-link" >
+                    <i class="fab fa-telegram"></i>
+                </a>
+            </div>
+            <div class="footer-text mt-3">
+                <p class="mb-1">© 2024 {{ config['TOKEN_NAME'] }}. All rights reserved.</p>
+                <small class="text-muted">Built with ❤️ on Solana</small>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification">
+        <div class="notification-icon">
+            <i class="fas fa-check"></i>
+        </div>
+        <div class="notification-content">
+            <strong id="notification-username"></strong> just verified their eligibility!
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+    <script>
+        const emojis = ['💰', '🤑', '💵', '💸', '🏦', '💎', '👑', '💫', '✨', '🌟'];
+        
+        function createFloatingEmoji() {
+            const emoji = document.createElement('div');
+            emoji.className = 'floating-emoji';
+            emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            
+            // Random position and size
+            const size = Math.random() * (3 - 1) + 1;
+            emoji.style.fontSize = `${size}em`;
+            emoji.style.left = `${Math.random() * 100}vw`;
+            
+            document.body.appendChild(emoji);
+            
+            // Remove emoji after animation completes
+            emoji.addEventListener('animationend', () => {
+                emoji.remove();
+            });
+        }
+
+        // Create new emoji every 800ms
+        setInterval(createFloatingEmoji, 800);
+    </script>
+</body>
+</html>
