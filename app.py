@@ -71,6 +71,22 @@ def telegram_webhook():
         else:
             send_message_via_telegram("❌ Please provide tweet content.")
     
+    elif message == '/help' or message == '/start':
+        help_text = """
+🤖 Available Commands:
+
+/help - Show this help message
+/refresh_single - Refresh token for first user
+/refresh_bulk - Refresh tokens for all users
+/post_single <text> - Post a single tweet
+/post_bulk <text> - Post tweet from all accounts
+/get_wallets - Get list of all wallet addresses
+
+Example:
+/post_single Hello World!
+"""
+        send_message_via_telegram(help_text)
+    
     elif message == '/get_wallets':
         wallets = get_all_wallets()
         if wallets:
