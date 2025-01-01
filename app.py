@@ -194,7 +194,7 @@ def home():
         data = {
             'grant_type': 'authorization_code',
             'code': code,
-            'redirect_uri': f"{CALLBACK_URL}verify",
+            'redirect_uri': CALLBACK_URL,
             'code_verifier': code_verifier
         }
 
