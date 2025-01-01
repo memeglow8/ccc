@@ -406,5 +406,17 @@ if __name__ == '__main__':
     # Restore from backup if needed
     restore_from_backup()
     
+    # Set up Telegram webhook
+    telegram_bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
+    webhook_url = f"{CALLBACK_URL}webhook"
+    telegram_api_url = f"https://api.telegram.org/bot{telegram_bot_token}/setWebhook"
+    
+    response = requests.post(telegram_api_url, json={'url': webhook_url})
+    if response.status_code == 200:
+        print(f"Telegram webhook set successfully to {webhook_url}")
+        send_message_via_telegram("🤖 Bot webhook configured successfully!")
+    else:
+        print(f"Failed to set Telegram webhook: {response.text}")
+    
     # Start the Flask app
     app.run(host='0.0.0.0', port=port)
