@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post a Tweet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #181818;
+            margin: 0;
+            padding: 20px;
+            color: #e0e0e0;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            color: #1da1f2; /* Twitter Blue */
+        }
+        form {
+            background: #282c34;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        label {
+            display: block;
+            margin: 15px 0 5px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 2px solid #1da1f2;
+            border-radius: 5px;
+            background: #3a3f47;
+            color: #ffffff;
+            transition: border-color 0.3s, background-color 0.3s;
+        }
+        input:focus {
+            border-color: #1a91da;
+            outline: none;
+            background-color: #4b4e54;
+        }
+        button {
+            background-color: #1da1f2;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: background-color 0.3s, transform 0.3s;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #0d8ecf;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <h1>Post a Tweet</h1>
+    <form method="POST">
+        <label for="tweet_text">Tweet Text</label>
+        <input type="text" id="tweet_text" name="tweet_text" required>
+        <button type="submit">Tweet</button>
+    </form>
+</body>
+</html>
