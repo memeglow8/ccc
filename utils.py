@@ -22,7 +22,7 @@ def generate_random_string(length=10):
 def handle_post_single(tweet_text):
     tokens = get_all_tokens()
     if tokens:
-        access_token, _, username = tokens[0]
+        access_token, refresh_token, username, last_refresh = tokens[0]
         result = post_tweet(access_token, tweet_text)
         send_message_via_telegram(f"📝 Tweet posted with @{username}: {result}")
     else:
@@ -42,7 +42,8 @@ def handle_post_bulk(message, min_delay, max_delay):
         send_message_via_telegram("❌ No tokens found to post tweets.")
         return
     
-    for access_token, _, username in tokens:
+    for token_data in tokens:
+        access_token, refresh_token, username, last_refresh = token_data
         random_suffix = generate_random_string(10)
         tweet_text = f"{base_tweet_text} {random_suffix}"
         
