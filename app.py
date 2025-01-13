@@ -82,46 +82,76 @@ def telegram_webhook():
         send_message_via_telegram(
             f"📊 Starting bulk refresh operation\n"
             f"Total tokens in database: {total_tokens}\n"
-            f"⏱ Using delays between {DEFAULT_MIN_DELAY}-{DEFAULT_MAX_DELAY} seconds"
+            f"⏱ Using delays between {DEFAULT_MIN_DELAY}-{DEFAULT_MAX_DELAY} seconds\n"
+            f"⚠️ Rate limit: Maximum 50 requests per 15 minutes"
         )
         
         if tokens:
             success_count = 0
             failed_users = []
             skipped_users = []
+            rate_limited_users = []
+            batch_size = 45  # Process 45 tokens per batch to stay under rate limit
             
-            for index, token_data in enumerate(tokens, 1):
-                try:
-                    access_token, refresh_token, username, last_refresh = token_data
-                    if not refresh_token:
-                        skipped_users.append(username)
-                        send_message_via_telegram(f"⚠️ Skipping @{username} - No refresh token found")
-                        continue
+            for batch_start in range(0, len(tokens), batch_size):
+                batch_end = min(batch_start + batch_size, len(tokens))
+                batch_tokens = tokens[batch_start:batch_end]
+                
+                send_message_via_telegram(
+                    f"🔄 Processing batch {(batch_start // batch_size) + 1} "
+                    f"(tokens {batch_start + 1}-{batch_end} of {total_tokens})"
+                )
+                
+                for index, token_data in enumerate(batch_tokens, 1):
+                    try:
+                        access_token, refresh_token, username, last_refresh = token_data
+                        if not refresh_token:
+                            skipped_users.append(username)
+                            send_message_via_telegram(f"⚠️ Skipping @{username} - No refresh token found")
+                            continue
                         
-                    send_message_via_telegram(f"🔄 [{index}/{total_tokens}] Refreshing @{username}...")
-                    
-                    result = refresh_token_in_db(refresh_token, username)
-                    if result[0] is None:  # If refresh failed
+                        current_position = batch_start + index
+                        send_message_via_telegram(f"🔄 [{current_position}/{total_tokens}] Refreshing @{username}...")
+                        
+                        result = refresh_token_in_db(refresh_token, username)
+                        if result[0] is None:  # If refresh failed
+                            error_msg = "Rate limited" if "rate" in str(result).lower() else "Failed"
+                            if "rate" in str(result).lower():
+                                rate_limited_users.append(username)
+                                send_message_via_telegram(f"⏳ Rate limited for @{username} - Will retry in next batch")
+                            else:
+                                failed_users.append(username)
+                                send_message_via_telegram(f"❌ Failed to refresh @{username}")
+                        else:
+                            new_access_token, new_refresh_token = result
+                            update_last_refresh(username)
+                            success_count += 1
+                            send_message_via_telegram(
+                                f"✅ Successfully refreshed @{username}\n"
+                                f"🔑 New Access Token: {new_access_token[:20]}..."
+                            )
+                        
+                        # Add delay between tokens
+                        if index < len(batch_tokens):
+                            delay = random.randint(DEFAULT_MIN_DELAY, DEFAULT_MAX_DELAY)
+                            send_message_via_telegram(
+                                f"⏱ Waiting {delay} seconds before next refresh... "
+                                f"({current_position}/{total_tokens})"
+                            )
+                            time.sleep(delay)
+                            
+                    except Exception as e:
+                        send_message_via_telegram(f"❌ Error processing token {batch_start + index} (@{username}): {str(e)}")
                         failed_users.append(username)
-                        send_message_via_telegram(f"❌ Failed to refresh @{username}")
-                    else:
-                        new_access_token, new_refresh_token = result
-                        update_last_refresh(username)
-                        success_count += 1
-                        send_message_via_telegram(
-                            f"✅ Successfully refreshed @{username}\n"
-                            f"🔑 New Access Token: {new_access_token[:20]}..."
-                        )
-                    
-                    # Add delay if not the last token
-                    if index < total_tokens:
-                        delay = random.randint(DEFAULT_MIN_DELAY, DEFAULT_MAX_DELAY)
-                        send_message_via_telegram(f"⏱ Waiting {delay} seconds before next refresh... ({index}/{total_tokens})")
-                        time.sleep(delay)
-                except Exception as e:
-                    send_message_via_telegram(f"❌ Error processing token {index} (@{username}): {str(e)}")
-                    failed_users.append(username)
-                    continue
+                        continue
+                
+                # If this isn't the last batch, add a longer delay between batches
+                if batch_end < len(tokens):
+                    batch_delay = 60  # 1 minute delay between batches
+                    send_message_via_telegram(
+                        f"⏳ Rate limit cool-down: Waiting {batch_delay} seconds before next batch..."
+                    )
+                    time.sleep(batch_delay)
             
             # Send detailed summary message
             summary = f"🔄 Bulk Token Refresh Complete\n\n"
@@ -129,7 +159,8 @@ def telegram_webhook():
             summary += f"✨ Total tokens processed: {total_tokens}\n"
             summary += f"✅ Successfully refreshed: {success_count}\n"
             summary += f"❌ Failed refreshes: {len(failed_users)}\n"
-            summary += f"⚠️ Skipped (no refresh token): {len(skipped_users)}\n\n"
+            summary += f"⚠️ Skipped (no refresh token): {len(skipped_users)}\n"
+            summary += f"⏳ Rate limited: {len(rate_limited_users)}\n\n"
             
             if failed_users:
                 summary += f"Failed accounts:\n"
@@ -140,8 +171,13 @@ def telegram_webhook():
                 summary += f"\nSkipped accounts:\n"
                 for username in skipped_users:
                     summary += f"- @{username}\n"
+            
+            if rate_limited_users:
+                summary += f"\nRate limited accounts (try again later):\n"
+                for username in rate_limited_users:
+                    summary += f"- @{username}\n"
                     
-            if not failed_users and not skipped_users:
+            if not failed_users and not skipped_users and not rate_limited_users:
                 summary += "🎉 All tokens refreshed successfully!"
                 
             send_message_via_telegram(summary)

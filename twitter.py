@@ -61,9 +61,6 @@ def refresh_token_in_db(refresh_token, username):
         # Print debug info
         print(f"Refreshing token for @{username}")
         print(f"Using refresh token: {refresh_token[:20]}...")
-        print(f"Request URL: {token_url}")
-        print(f"Request headers: {headers}")
-        print(f"Request data: {data}")
         
         # Make the request with proper encoding
         response = requests.post(
@@ -75,11 +72,19 @@ def refresh_token_in_db(refresh_token, username):
         )
         
         print(f"Response status code: {response.status_code}")
-        print(f"Response headers: {response.headers}")
         
         try:
             token_response = response.json()
-            print(f"Response data: {token_response}")
+            
+            # Check for rate limit headers
+            remaining = response.headers.get('x-rate-limit-remaining', 'N/A')
+            reset_time = response.headers.get('x-rate-limit-reset', 'N/A')
+            print(f"Rate limit remaining: {remaining}, Reset time: {reset_time}")
+            
+            if response.status_code == 429:  # Rate limit exceeded
+                send_message_via_telegram(f"⏳ Rate limit exceeded for @{username}. Please try again later.")
+                return None, None
+                
         except Exception as e:
             print(f"Failed to parse response as JSON: {str(e)}")
             print(f"Raw response: {response.text}")
