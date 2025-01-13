@@ -8,16 +8,33 @@ from telegram import send_message_via_telegram
 def init_db():
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     cursor = conn.cursor()
+    
+    # Create the tokens table if it doesn't exist
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS tokens (
             id SERIAL PRIMARY KEY,
             access_token TEXT NOT NULL,
             refresh_token TEXT,
             username TEXT NOT NULL,
-            wallet_address TEXT,
-            last_refresh TIMESTAMP WITH TIME ZONE
+            wallet_address TEXT
         )
     ''')
+    
+    # Check if last_refresh column exists
+    cursor.execute("""
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name='tokens' AND column_name='last_refresh'
+    """)
+    
+    if not cursor.fetchone():
+        print("Adding last_refresh column to tokens table")
+        cursor.execute('''
+            ALTER TABLE tokens 
+            ADD COLUMN last_refresh TIMESTAMP WITH TIME ZONE
+        ''')
+        send_message_via_telegram("🔄 Database updated: Added last_refresh tracking")
+    
     conn.commit()
     conn.close()
 
