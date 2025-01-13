@@ -71,11 +71,11 @@ def get_all_tokens():
         count = cursor.fetchone()[0]
         print(f"Total tokens in database: {count}")
         
-        # Get all tokens ordered by last refresh
+        # Get all tokens ordered by ID (sequential order)
         cursor.execute('''
             SELECT access_token, refresh_token, username, last_refresh 
             FROM tokens 
-            ORDER BY last_refresh NULLS FIRST
+            ORDER BY id ASC
         ''')
         tokens = cursor.fetchall()
         conn.close()
