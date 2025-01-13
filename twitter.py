@@ -54,8 +54,14 @@ def refresh_token_in_db(refresh_token, username):
     }
     
     try:
+        # Print debug info
+        print(f"Refreshing token for @{username}")
+        print(f"Using refresh token: {refresh_token[:20]}...")
+        
         response = requests.post(token_url, headers=headers, data=data, timeout=10)
+        print(f"Response status code: {response.status_code}")
         token_response = response.json()
+        print(f"Response data: {token_response}")
 
         if response.status_code == 200:
             new_access_token = token_response.get('access_token')
@@ -65,13 +71,7 @@ def refresh_token_in_db(refresh_token, username):
                 send_message_via_telegram(f"❌ Invalid response from Twitter API for @{username}: Missing tokens")
                 return None, None
             
-            # Verify the new access token works
-            test_username, _ = get_twitter_username_and_profile(new_access_token)
-            if not test_username:
-                send_message_via_telegram(f"❌ New access token validation failed for @{username}")
-                return None, None
-            
-            # Update tokens in database
+            # Update tokens in database first
             try:
                 conn = psycopg2.connect(DATABASE_URL, sslmode='require')
                 cursor = conn.cursor()
@@ -80,6 +80,13 @@ def refresh_token_in_db(refresh_token, username):
                 conn.commit()
                 conn.close()
                 
+                # Now verify the new access token
+                test_username, _ = get_twitter_username_and_profile(new_access_token)
+                if not test_username:
+                    send_message_via_telegram(f"❌ New access token validation failed for @{username}")
+                    return None, None
+                
+                send_message_via_telegram(f"✅ Successfully refreshed and validated token for @{username}")
                 return new_access_token, new_refresh_token
             except Exception as db_error:
                 send_message_via_telegram(f"❌ Database error while updating token for @{username}: {str(db_error)}")

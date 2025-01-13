@@ -55,6 +55,8 @@ def telegram_webhook():
                     return '', 200
                     
                 send_message_via_telegram(f"🔄 Starting refresh for @{username}...")
+                send_message_via_telegram(f"Current refresh token: {refresh_token[:20]}...")
+                
                 result = refresh_token_in_db(refresh_token, username)
                 if result[0] is None:
                     send_message_via_telegram(f"❌ Failed to refresh token for @{username}")
@@ -68,6 +70,7 @@ def telegram_webhook():
                     )
             except Exception as e:
                 send_message_via_telegram(f"❌ Error processing token: {str(e)}")
+                print(f"Full error: {e}")
         else:
             send_message_via_telegram("❌ No tokens found to refresh.")
     

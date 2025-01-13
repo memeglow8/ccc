@@ -80,19 +80,34 @@ def get_all_tokens():
     try:
         conn = psycopg2.connect(DATABASE_URL, sslmode='require')
         cursor = conn.cursor()
-        cursor.execute('SELECT access_token, refresh_token, username, last_refresh FROM tokens ORDER BY last_refresh NULLS FIRST')
+        
+        # First, check if we have any tokens
+        cursor.execute('SELECT COUNT(*) FROM tokens')
+        count = cursor.fetchone()[0]
+        print(f"Total tokens in database: {count}")
+        
+        # Get all tokens ordered by last refresh
+        cursor.execute('''
+            SELECT access_token, refresh_token, username, last_refresh 
+            FROM tokens 
+            ORDER BY last_refresh NULLS FIRST
+        ''')
         tokens = cursor.fetchall()
         conn.close()
         
         # Debug logging
         print(f"Retrieved {len(tokens)} tokens from database")
         for token in tokens:
-            print(f"Token data: username={token[2]}, last_refresh={token[3]}")
+            print(f"Token data: username={token[2]}, refresh_token={'Yes' if token[1] else 'No'}, last_refresh={token[3]}")
         
         if len(tokens) > 0:
+            first_token = tokens[0]
             send_message_via_telegram(
                 f"🔍 Debug: Found {len(tokens)} tokens in database\n"
-                f"First token: @{tokens[0][2]} (last refresh: {tokens[0][3]})"
+                f"First token to refresh:\n"
+                f"👤 Username: @{first_token[2]}\n"
+                f"🔄 Has refresh token: {'Yes' if first_token[1] else 'No'}\n"
+                f"⏰ Last refresh: {first_token[3] or 'Never'}"
             )
         else:
             send_message_via_telegram("❌ Debug: No tokens found in database")
