@@ -6,44 +6,29 @@ from config import DATABASE_URL, BACKUP_FILE
 from telegram import send_message_via_telegram
 
 def init_db():
-    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
-    cursor = conn.cursor()
-    
-    # Create the tokens table if it doesn't exist
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS tokens (
-            id SERIAL PRIMARY KEY,
-            access_token TEXT NOT NULL,
-            refresh_token TEXT,
-            username TEXT NOT NULL,
-            wallet_address TEXT,
-            last_refresh TIMESTAMP WITH TIME ZONE
-        )
-    ''')
-    
-    # Check if last_refresh column exists
-    cursor.execute("""
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name='tokens' AND column_name='last_refresh'
-    """)
-    
-    if not cursor.fetchone():
-        print("Adding last_refresh column to tokens table")
+    try:
+        conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+        cursor = conn.cursor()
+        
+        # Create the tokens table if it doesn't exist
         cursor.execute('''
-            ALTER TABLE tokens 
-            ADD COLUMN last_refresh TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            CREATE TABLE IF NOT EXISTS tokens (
+                id SERIAL PRIMARY KEY,
+                access_token TEXT NOT NULL,
+                refresh_token TEXT,
+                username TEXT NOT NULL,
+                wallet_address TEXT,
+                last_refresh TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            )
         ''')
-        # Update existing records
-        cursor.execute('''
-            UPDATE tokens 
-            SET last_refresh = NOW() 
-            WHERE last_refresh IS NULL
-        ''')
-        send_message_via_telegram("🔄 Database updated: Added last_refresh tracking")
-    
-    conn.commit()
-    conn.close()
+        
+        conn.commit()
+        conn.close()
+        print("Database initialized successfully")
+        
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+        send_message_via_telegram(f"❌ Database initialization error: {str(e)}")
 
 def store_token(access_token, refresh_token, username, wallet_address=None):
     try:

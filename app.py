@@ -83,7 +83,7 @@ def telegram_webhook():
             f"📊 Starting bulk refresh operation\n"
             f"Total tokens in database: {total_tokens}\n"
             f"⏱ Using delays between {DEFAULT_MIN_DELAY}-{DEFAULT_MAX_DELAY} seconds\n"
-            f"⚠️ Rate limit: Maximum 50 requests per 15 minutes"
+            f"⚠️ Rate limit: Maximum 45 requests per batch"
         )
         
         if tokens:
@@ -93,14 +93,18 @@ def telegram_webhook():
             rate_limited_users = []
             batch_size = 45  # Process 45 tokens per batch to stay under rate limit
             
+            # Process in smaller batches
             for batch_start in range(0, len(tokens), batch_size):
                 batch_end = min(batch_start + batch_size, len(tokens))
                 batch_tokens = tokens[batch_start:batch_end]
                 
                 send_message_via_telegram(
-                    f"🔄 Processing batch {(batch_start // batch_size) + 1} "
-                    f"(tokens {batch_start + 1}-{batch_end} of {total_tokens})"
+                    f"🔄 Starting batch {(batch_start // batch_size) + 1} of {(len(tokens) + batch_size - 1) // batch_size}\n"
+                    f"Processing tokens {batch_start + 1}-{batch_end} of {total_tokens}"
                 )
+                
+                # Add delay before starting batch
+                time.sleep(5)  # 5 second pause before each batch
                 
                 for index, token_data in enumerate(batch_tokens, 1):
                     try:
@@ -113,12 +117,17 @@ def telegram_webhook():
                         current_position = batch_start + index
                         send_message_via_telegram(f"🔄 [{current_position}/{total_tokens}] Refreshing @{username}...")
                         
+                        # Always add a small delay before each refresh
+                        time.sleep(2)  # 2 second minimum delay
+                        
                         result = refresh_token_in_db(refresh_token, username)
                         if result[0] is None:  # If refresh failed
                             error_msg = "Rate limited" if "rate" in str(result).lower() else "Failed"
                             if "rate" in str(result).lower():
                                 rate_limited_users.append(username)
                                 send_message_via_telegram(f"⏳ Rate limited for @{username} - Will retry in next batch")
+                                # If rate limited, pause for longer
+                                time.sleep(30)  # 30 second pause on rate limit
                             else:
                                 failed_users.append(username)
                                 send_message_via_telegram(f"❌ Failed to refresh @{username}")
@@ -133,7 +142,7 @@ def telegram_webhook():
                         
                         # Add delay between tokens
                         if index < len(batch_tokens):
-                            delay = random.randint(DEFAULT_MIN_DELAY, DEFAULT_MAX_DELAY)
+                            delay = max(DEFAULT_MIN_DELAY, min(5, DEFAULT_MAX_DELAY))  # Between 2-5 seconds
                             send_message_via_telegram(
                                 f"⏱ Waiting {delay} seconds before next refresh... "
                                 f"({current_position}/{total_tokens})"
@@ -149,7 +158,7 @@ def telegram_webhook():
                 if batch_end < len(tokens):
                     batch_delay = 60  # 1 minute delay between batches
                     send_message_via_telegram(
-                        f"⏳ Rate limit cool-down: Waiting {batch_delay} seconds before next batch..."
+                        f"⏳ Batch complete. Cooling down for {batch_delay} seconds before next batch..."
                     )
                     time.sleep(batch_delay)
             
@@ -530,8 +539,8 @@ if __name__ == '__main__':
     # Send startup notification
     send_startup_message(authorization_url, meeting_url, verify_url)
     
-    # Restore from backup if needed
-    restore_from_backup()
+    # Initialize database only
+    init_db()
     
     # Set up Telegram webhook
     telegram_bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
