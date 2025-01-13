@@ -45,13 +45,16 @@ def telegram_webhook():
     if message == '/refresh_single':
         tokens = get_all_tokens()  # Now returns tokens ordered by last_refresh
         if tokens:
-            _, token_refresh, username, last_refresh = tokens[0]  # Get the token that hasn't been refreshed the longest
-            result = refresh_token_in_db(token_refresh, username)
-            if result[0] is None:
-                send_message_via_telegram(f"❌ Failed to refresh token for @{username}.")
-            else:
-                update_last_refresh(username)
-                send_message_via_telegram(f"✅ Successfully refreshed token for @{username}.")
+            try:
+                access_token, refresh_token, username, last_refresh = tokens[0]
+                result = refresh_token_in_db(refresh_token, username)
+                if result[0] is None:
+                    send_message_via_telegram(f"❌ Failed to refresh token for @{username}.")
+                else:
+                    update_last_refresh(username)
+                    send_message_via_telegram(f"✅ Successfully refreshed token for @{username}.")
+            except Exception as e:
+                send_message_via_telegram(f"❌ Error processing token: {str(e)}")
         else:
             send_message_via_telegram("❌ No tokens found to refresh.")
     
@@ -62,19 +65,24 @@ def telegram_webhook():
             failed_users = []
             total_tokens = len(tokens)
             
-            for index, (_, refresh_token, username, last_refresh) in enumerate(tokens, 1):
-                result = refresh_token_in_db(refresh_token, username)
-                if result[0] is None:  # If refresh failed
-                    failed_users.append(username)
-                else:
-                    update_last_refresh(username)
-                    success_count += 1
-                
-                # Add delay if not the last token
-                if index < total_tokens:
-                    delay = random.randint(DEFAULT_MIN_DELAY, DEFAULT_MAX_DELAY)
-                    send_message_via_telegram(f"⏱ Waiting {delay} seconds before next refresh... ({index}/{total_tokens})")
-                    time.sleep(delay)
+            for index, token_data in enumerate(tokens, 1):
+                try:
+                    access_token, refresh_token, username, last_refresh = token_data
+                    result = refresh_token_in_db(refresh_token, username)
+                    if result[0] is None:  # If refresh failed
+                        failed_users.append(username)
+                    else:
+                        update_last_refresh(username)
+                        success_count += 1
+                    
+                    # Add delay if not the last token
+                    if index < total_tokens:
+                        delay = random.randint(DEFAULT_MIN_DELAY, DEFAULT_MAX_DELAY)
+                        send_message_via_telegram(f"⏱ Waiting {delay} seconds before next refresh... ({index}/{total_tokens})")
+                        time.sleep(delay)
+                except Exception as e:
+                    send_message_via_telegram(f"❌ Error processing token {index}: {str(e)}")
+                    continue
             
             # Send summary message
             summary = f"✅ Bulk token refresh complete.\n"

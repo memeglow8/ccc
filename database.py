@@ -59,9 +59,18 @@ def get_all_tokens():
         cursor.execute('SELECT access_token, refresh_token, username, last_refresh FROM tokens ORDER BY last_refresh NULLS FIRST')
         tokens = cursor.fetchall()
         conn.close()
+        
+        # Debug logging
+        print(f"Retrieved {len(tokens)} tokens from database")
+        for token in tokens:
+            print(f"Token data: {token}")
+        send_message_via_telegram(f"🔍 Debug: Found {len(tokens)} tokens in database")
+        
         return tokens
     except Exception as e:
-        print(f"Error retrieving tokens from database: {e}")
+        error_msg = f"Error retrieving tokens from database: {e}"
+        print(error_msg)
+        send_message_via_telegram(f"❌ Database Error: {error_msg}")
         return []
 
 def get_total_tokens():
