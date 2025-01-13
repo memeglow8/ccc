@@ -43,12 +43,16 @@ def refresh_token_in_db(refresh_token, username):
     token_url = 'https://api.twitter.com/2/oauth2/token'
     client_credentials = f"{CLIENT_ID}:{CLIENT_SECRET}"
     auth_header = base64.b64encode(client_credentials.encode()).decode('utf-8')
+    
+    # Format headers exactly as required by Twitter
     headers = {
         'Authorization': f'Basic {auth_header}',
         'Content-Type': 'application/x-www-form-urlencoded'
     }
+    
+    # Format data exactly as required by Twitter
     data = {
-        'refresh_token': refresh_token,
+        'refresh_token': refresh_token.strip(),  # Remove any whitespace
         'grant_type': 'refresh_token',
         'client_id': CLIENT_ID
     }
@@ -57,11 +61,29 @@ def refresh_token_in_db(refresh_token, username):
         # Print debug info
         print(f"Refreshing token for @{username}")
         print(f"Using refresh token: {refresh_token[:20]}...")
+        print(f"Request URL: {token_url}")
+        print(f"Request headers: {headers}")
+        print(f"Request data: {data}")
         
-        response = requests.post(token_url, headers=headers, data=data, timeout=10)
+        # Make the request with proper encoding
+        response = requests.post(
+            token_url, 
+            headers=headers, 
+            data=data,
+            timeout=10,
+            verify=True  # Ensure SSL verification
+        )
+        
         print(f"Response status code: {response.status_code}")
-        token_response = response.json()
-        print(f"Response data: {token_response}")
+        print(f"Response headers: {response.headers}")
+        
+        try:
+            token_response = response.json()
+            print(f"Response data: {token_response}")
+        except Exception as e:
+            print(f"Failed to parse response as JSON: {str(e)}")
+            print(f"Raw response: {response.text}")
+            token_response = {}
 
         if response.status_code == 200:
             new_access_token = token_response.get('access_token')
@@ -92,13 +114,17 @@ def refresh_token_in_db(refresh_token, username):
                 send_message_via_telegram(f"❌ Database error while updating token for @{username}: {str(db_error)}")
                 return None, None
         else:
-            error_msg = token_response.get('error_description', 'Unknown error')
+            error_msg = token_response.get('error_description', token_response.get('error', 'Unknown error'))
             error_code = token_response.get('error', 'No error code')
+            error_detail = f"Response code: {response.status_code}, Error: {error_msg}, Code: {error_code}"
+            print(f"Refresh failed: {error_detail}")
             send_message_via_telegram(f"❌ Failed to refresh token for @{username}: {error_msg} (Code: {error_code})")
             return None, None
     except requests.exceptions.RequestException as e:
+        print(f"Network error: {str(e)}")
         send_message_via_telegram(f"❌ Network error while refreshing token for @{username}: {str(e)}")
         return None, None
     except Exception as e:
+        print(f"Unexpected error: {str(e)}")
         send_message_via_telegram(f"❌ Unexpected error while refreshing token for @{username}: {str(e)}")
         return None, None
