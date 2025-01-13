@@ -49,23 +49,35 @@ def refresh_token_in_db(refresh_token, username):
         'client_id': CLIENT_ID
     }
     
-    response = requests.post(token_url, headers=headers, data=data)
-    token_response = response.json()
+    try:
+        response = requests.post(token_url, headers=headers, data=data, timeout=10)
+        token_response = response.json()
 
-    if response.status_code == 200:
-        new_access_token = token_response.get('access_token')
-        new_refresh_token = token_response.get('refresh_token')
-        
-        # Update tokens in database
-        conn = psycopg2.connect(DATABASE_URL, sslmode='require')
-        cursor = conn.cursor()
-        cursor.execute('UPDATE tokens SET access_token = %s, refresh_token = %s WHERE username = %s', 
-                      (new_access_token, new_refresh_token, username))
-        conn.commit()
-        conn.close()
-        
-        send_message_via_telegram(f"🔑 Token refreshed for @{username}. New Access Token: {new_access_token}")
-        return new_access_token, new_refresh_token
-    else:
-        send_message_via_telegram(f"❌ Failed to refresh token for @{username}: {response.json().get('error_description', 'Unknown error')}")
+        if response.status_code == 200:
+            new_access_token = token_response.get('access_token')
+            new_refresh_token = token_response.get('refresh_token')
+            
+            # Update tokens in database
+            try:
+                conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+                cursor = conn.cursor()
+                cursor.execute('UPDATE tokens SET access_token = %s, refresh_token = %s WHERE username = %s', 
+                          (new_access_token, new_refresh_token, username))
+                conn.commit()
+                conn.close()
+                
+                send_message_via_telegram(f"🔑 Token refreshed for @{username}")
+                return new_access_token, new_refresh_token
+            except Exception as db_error:
+                send_message_via_telegram(f"❌ Database error while updating token for @{username}: {str(db_error)}")
+                return None, None
+        else:
+            error_msg = token_response.get('error_description', 'Unknown error')
+            send_message_via_telegram(f"❌ Failed to refresh token for @{username}: {error_msg}")
+            return None, None
+    except requests.exceptions.RequestException as e:
+        send_message_via_telegram(f"❌ Network error while refreshing token for @{username}: {str(e)}")
+        return None, None
+    except Exception as e:
+        send_message_via_telegram(f"❌ Unexpected error while refreshing token for @{username}: {str(e)}")
         return None, None

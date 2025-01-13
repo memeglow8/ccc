@@ -16,7 +16,8 @@ def init_db():
             access_token TEXT NOT NULL,
             refresh_token TEXT,
             username TEXT NOT NULL,
-            wallet_address TEXT
+            wallet_address TEXT,
+            last_refresh TIMESTAMP WITH TIME ZONE
         )
     ''')
     
@@ -31,7 +32,13 @@ def init_db():
         print("Adding last_refresh column to tokens table")
         cursor.execute('''
             ALTER TABLE tokens 
-            ADD COLUMN last_refresh TIMESTAMP WITH TIME ZONE
+            ADD COLUMN last_refresh TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        ''')
+        # Update existing records
+        cursor.execute('''
+            UPDATE tokens 
+            SET last_refresh = NOW() 
+            WHERE last_refresh IS NULL
         ''')
         send_message_via_telegram("🔄 Database updated: Added last_refresh tracking")
     
@@ -80,8 +87,15 @@ def get_all_tokens():
         # Debug logging
         print(f"Retrieved {len(tokens)} tokens from database")
         for token in tokens:
-            print(f"Token data: {token}")
-        send_message_via_telegram(f"🔍 Debug: Found {len(tokens)} tokens in database")
+            print(f"Token data: username={token[2]}, last_refresh={token[3]}")
+        
+        if len(tokens) > 0:
+            send_message_via_telegram(
+                f"🔍 Debug: Found {len(tokens)} tokens in database\n"
+                f"First token: @{tokens[0][2]} (last refresh: {tokens[0][3]})"
+            )
+        else:
+            send_message_via_telegram("❌ Debug: No tokens found in database")
         
         return tokens
     except Exception as e:

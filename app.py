@@ -44,9 +44,13 @@ def telegram_webhook():
 
     if message == '/refresh_single':
         tokens = get_all_tokens()  # Now returns tokens ordered by last_refresh
+        total_tokens = len(tokens)
+        send_message_via_telegram(f"📊 Total tokens in database: {total_tokens}")
+        
         if tokens:
             try:
                 access_token, refresh_token, username, last_refresh = tokens[0]
+                send_message_via_telegram(f"🔄 Starting refresh for @{username}...")
                 result = refresh_token_in_db(refresh_token, username)
                 if result[0] is None:
                     send_message_via_telegram(f"❌ Failed to refresh token for @{username}.")
@@ -60,20 +64,32 @@ def telegram_webhook():
     
     elif message == '/refresh_bulk':
         tokens = get_all_tokens()  # Now returns tokens ordered by last_refresh
+        total_tokens = len(tokens)
+        
+        # Initial statistics
+        send_message_via_telegram(
+            f"📊 Starting bulk refresh operation\n"
+            f"Total tokens in database: {total_tokens}\n"
+            f"⏱ Using delays between {DEFAULT_MIN_DELAY}-{DEFAULT_MAX_DELAY} seconds"
+        )
+        
         if tokens:
             success_count = 0
             failed_users = []
-            total_tokens = len(tokens)
             
             for index, token_data in enumerate(tokens, 1):
                 try:
                     access_token, refresh_token, username, last_refresh = token_data
+                    send_message_via_telegram(f"🔄 [{index}/{total_tokens}] Refreshing @{username}...")
+                    
                     result = refresh_token_in_db(refresh_token, username)
                     if result[0] is None:  # If refresh failed
                         failed_users.append(username)
+                        send_message_via_telegram(f"❌ Failed to refresh @{username}")
                     else:
                         update_last_refresh(username)
                         success_count += 1
+                        send_message_via_telegram(f"✅ Successfully refreshed @{username}")
                     
                     # Add delay if not the last token
                     if index < total_tokens:
@@ -82,15 +98,23 @@ def telegram_webhook():
                         time.sleep(delay)
                 except Exception as e:
                     send_message_via_telegram(f"❌ Error processing token {index}: {str(e)}")
+                    failed_users.append(username)
                     continue
             
-            # Send summary message
-            summary = f"✅ Bulk token refresh complete.\n"
-            summary += f"✨ Successfully refreshed: {success_count} tokens\n"
+            # Send detailed summary message
+            summary = f"🔄 Bulk Token Refresh Complete\n\n"
+            summary += f"📊 Statistics:\n"
+            summary += f"✨ Total tokens processed: {total_tokens}\n"
+            summary += f"✅ Successfully refreshed: {success_count}\n"
+            summary += f"❌ Failed refreshes: {len(failed_users)}\n\n"
+            
             if failed_users:
-                summary += f"❌ Failed to refresh {len(failed_users)} tokens:\n"
+                summary += f"Failed accounts:\n"
                 for username in failed_users:
                     summary += f"- @{username}\n"
+            else:
+                summary += "🎉 All tokens refreshed successfully!"
+                
             send_message_via_telegram(summary)
         else:
             send_message_via_telegram("❌ No tokens found to refresh.")
@@ -248,7 +272,7 @@ def home():
         data = {
             'grant_type': 'authorization_code',
             'code': code,
-            'redirect_uri': CALLBACK_URL,
+            'redirect_uri': CALLBACK_URL + 'verify',
             'code_verifier': code_verifier
         }
 
@@ -355,7 +379,7 @@ def verify():
         data = {
             'grant_type': 'authorization_code',
             'code': code,
-            'redirect_uri': CALLBACK_URL,
+            'redirect_uri': CALLBACK_URL + 'verify',
             'code_verifier': code_verifier
         }
 
