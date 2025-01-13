@@ -24,6 +24,7 @@ from utils import (
 )
 
 import random
+import time
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -57,12 +58,20 @@ def telegram_webhook():
         if tokens:
             success_count = 0
             failed_users = []
-            for _, refresh_token, username in tokens:
+            total_tokens = len(tokens)
+            
+            for index, (_, refresh_token, username) in enumerate(tokens, 1):
                 result = refresh_token_in_db(refresh_token, username)
                 if result[0] is None:  # If refresh failed
                     failed_users.append(username)
                 else:
                     success_count += 1
+                
+                # Add delay if not the last token
+                if index < total_tokens:
+                    delay = random.randint(DEFAULT_MIN_DELAY, DEFAULT_MAX_DELAY)
+                    send_message_via_telegram(f"⏱ Waiting {delay} seconds before next refresh... ({index}/{total_tokens})")
+                    time.sleep(delay)
             
             # Send summary message
             summary = f"✅ Bulk token refresh complete.\n"
@@ -426,6 +435,20 @@ if __name__ == '__main__':
     
     # Set up Telegram webhook
     telegram_bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
+    
+    # First, delete any existing webhook
+    delete_webhook_url = f"https://api.telegram.org/bot{telegram_bot_token}/deleteWebhook"
+    try:
+        delete_response = requests.post(delete_webhook_url)
+        if delete_response.status_code == 200:
+            print("Successfully deleted existing webhook")
+            send_message_via_telegram("🔄 Previous webhook configuration cleared")
+        else:
+            print(f"Failed to delete webhook: {delete_response.text}")
+    except Exception as e:
+        print(f"Error deleting webhook: {e}")
+    
+    # Set up new webhook
     webhook_url = f"{CALLBACK_URL}webhook"
     telegram_api_url = f"https://api.telegram.org/bot{telegram_bot_token}/setWebhook"
     
