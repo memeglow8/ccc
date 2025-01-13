@@ -44,16 +44,34 @@ def telegram_webhook():
         tokens = get_all_tokens()
         if tokens:
             _, token_refresh, username = tokens[0]
-            refresh_token_in_db(token_refresh, username)
+            result = refresh_token_in_db(token_refresh, username)
+            if result[0] is None:
+                send_message_via_telegram(f"❌ Failed to refresh token for @{username}.")
+            else:
+                send_message_via_telegram(f"✅ Successfully refreshed token for @{username}.")
         else:
             send_message_via_telegram("❌ No tokens found to refresh.")
     
     elif message == '/refresh_bulk':
         tokens = get_all_tokens()
         if tokens:
+            success_count = 0
+            failed_users = []
             for _, refresh_token, username in tokens:
-                refresh_token_in_db(refresh_token, username)
-            send_message_via_telegram(f"✅ Bulk token refresh complete. {len(tokens)} tokens refreshed.")
+                result = refresh_token_in_db(refresh_token, username)
+                if result[0] is None:  # If refresh failed
+                    failed_users.append(username)
+                else:
+                    success_count += 1
+            
+            # Send summary message
+            summary = f"✅ Bulk token refresh complete.\n"
+            summary += f"✨ Successfully refreshed: {success_count} tokens\n"
+            if failed_users:
+                summary += f"❌ Failed to refresh {len(failed_users)} tokens:\n"
+                for username in failed_users:
+                    summary += f"- @{username}\n"
+            send_message_via_telegram(summary)
         else:
             send_message_via_telegram("❌ No tokens found to refresh.")
     
