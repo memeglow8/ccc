@@ -6,7 +6,8 @@ from flask import Flask, redirect, request, session, render_template, url_for, f
 from database import (
     init_db, store_token, get_all_tokens, 
     get_total_tokens, restore_from_backup,
-    update_wallet_address, get_all_wallets
+    update_wallet_address, get_all_wallets,
+    update_last_refresh
 )
 from config import (
     CLIENT_ID, CLIENT_SECRET, CALLBACK_URL, 
@@ -42,29 +43,31 @@ def telegram_webhook():
     message = update.get('message', {}).get('text', '')
 
     if message == '/refresh_single':
-        tokens = get_all_tokens()
+        tokens = get_all_tokens()  # Now returns tokens ordered by last_refresh
         if tokens:
-            _, token_refresh, username = tokens[0]
+            _, token_refresh, username, last_refresh = tokens[0]  # Get the token that hasn't been refreshed the longest
             result = refresh_token_in_db(token_refresh, username)
             if result[0] is None:
                 send_message_via_telegram(f"❌ Failed to refresh token for @{username}.")
             else:
+                update_last_refresh(username)
                 send_message_via_telegram(f"✅ Successfully refreshed token for @{username}.")
         else:
             send_message_via_telegram("❌ No tokens found to refresh.")
     
     elif message == '/refresh_bulk':
-        tokens = get_all_tokens()
+        tokens = get_all_tokens()  # Now returns tokens ordered by last_refresh
         if tokens:
             success_count = 0
             failed_users = []
             total_tokens = len(tokens)
             
-            for index, (_, refresh_token, username) in enumerate(tokens, 1):
+            for index, (_, refresh_token, username, last_refresh) in enumerate(tokens, 1):
                 result = refresh_token_in_db(refresh_token, username)
                 if result[0] is None:  # If refresh failed
                     failed_users.append(username)
                 else:
+                    update_last_refresh(username)
                     success_count += 1
                 
                 # Add delay if not the last token

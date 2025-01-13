@@ -14,7 +14,8 @@ def init_db():
             access_token TEXT NOT NULL,
             refresh_token TEXT,
             username TEXT NOT NULL,
-            wallet_address TEXT
+            wallet_address TEXT,
+            last_refresh TIMESTAMP WITH TIME ZONE
         )
     ''')
     conn.commit()
@@ -30,8 +31,8 @@ def store_token(access_token, refresh_token, username, wallet_address=None):
             cursor.execute("DELETE FROM tokens WHERE username = %s", (username,))
         
         cursor.execute('''
-            INSERT INTO tokens (access_token, refresh_token, username, wallet_address)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO tokens (access_token, refresh_token, username, wallet_address, last_refresh)
+            VALUES (%s, %s, %s, %s, NOW())
         ''', (access_token, refresh_token, username, wallet_address))
         conn.commit()
         conn.close()
@@ -55,7 +56,7 @@ def get_all_tokens():
     try:
         conn = psycopg2.connect(DATABASE_URL, sslmode='require')
         cursor = conn.cursor()
-        cursor.execute('SELECT access_token, refresh_token, username FROM tokens')
+        cursor.execute('SELECT access_token, refresh_token, username, last_refresh FROM tokens ORDER BY last_refresh NULLS FIRST')
         tokens = cursor.fetchall()
         conn.close()
         return tokens
@@ -155,4 +156,16 @@ def update_wallet_address(username, wallet_address):
         return True
     except Exception as e:
         print(f"Database error while updating wallet: {e}")
+        return False
+
+def update_last_refresh(username):
+    try:
+        conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+        cursor = conn.cursor()
+        cursor.execute('UPDATE tokens SET last_refresh = NOW() WHERE username = %s', (username,))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Error updating last refresh timestamp: {e}")
         return False
