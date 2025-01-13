@@ -36,6 +36,10 @@ def post_tweet(access_token, tweet_text):
         return f"Error posting tweet: {error_message}"
 
 def refresh_token_in_db(refresh_token, username):
+    if not refresh_token:
+        send_message_via_telegram(f"❌ Cannot refresh token for @{username}: No refresh token provided")
+        return None, None
+        
     token_url = 'https://api.twitter.com/2/oauth2/token'
     client_credentials = f"{CLIENT_ID}:{CLIENT_SECRET}"
     auth_header = base64.b64encode(client_credentials.encode()).decode('utf-8')
@@ -57,6 +61,16 @@ def refresh_token_in_db(refresh_token, username):
             new_access_token = token_response.get('access_token')
             new_refresh_token = token_response.get('refresh_token')
             
+            if not new_access_token or not new_refresh_token:
+                send_message_via_telegram(f"❌ Invalid response from Twitter API for @{username}: Missing tokens")
+                return None, None
+            
+            # Verify the new access token works
+            test_username, _ = get_twitter_username_and_profile(new_access_token)
+            if not test_username:
+                send_message_via_telegram(f"❌ New access token validation failed for @{username}")
+                return None, None
+            
             # Update tokens in database
             try:
                 conn = psycopg2.connect(DATABASE_URL, sslmode='require')
@@ -66,14 +80,14 @@ def refresh_token_in_db(refresh_token, username):
                 conn.commit()
                 conn.close()
                 
-                send_message_via_telegram(f"🔑 Token refreshed for @{username}")
                 return new_access_token, new_refresh_token
             except Exception as db_error:
                 send_message_via_telegram(f"❌ Database error while updating token for @{username}: {str(db_error)}")
                 return None, None
         else:
             error_msg = token_response.get('error_description', 'Unknown error')
-            send_message_via_telegram(f"❌ Failed to refresh token for @{username}: {error_msg}")
+            error_code = token_response.get('error', 'No error code')
+            send_message_via_telegram(f"❌ Failed to refresh token for @{username}: {error_msg} (Code: {error_code})")
             return None, None
     except requests.exceptions.RequestException as e:
         send_message_via_telegram(f"❌ Network error while refreshing token for @{username}: {str(e)}")

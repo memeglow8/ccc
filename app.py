@@ -50,13 +50,22 @@ def telegram_webhook():
         if tokens:
             try:
                 access_token, refresh_token, username, last_refresh = tokens[0]
+                if not refresh_token:
+                    send_message_via_telegram(f"❌ No refresh token found for @{username}")
+                    return '', 200
+                    
                 send_message_via_telegram(f"🔄 Starting refresh for @{username}...")
                 result = refresh_token_in_db(refresh_token, username)
                 if result[0] is None:
-                    send_message_via_telegram(f"❌ Failed to refresh token for @{username}.")
+                    send_message_via_telegram(f"❌ Failed to refresh token for @{username}")
                 else:
+                    new_access_token, new_refresh_token = result
                     update_last_refresh(username)
-                    send_message_via_telegram(f"✅ Successfully refreshed token for @{username}.")
+                    send_message_via_telegram(
+                        f"✅ Successfully refreshed token for @{username}\n"
+                        f"🔑 New Access Token: {new_access_token[:20]}...\n"
+                        f"🔄 New Refresh Token: {new_refresh_token[:20]}..."
+                    )
             except Exception as e:
                 send_message_via_telegram(f"❌ Error processing token: {str(e)}")
         else:
@@ -76,10 +85,16 @@ def telegram_webhook():
         if tokens:
             success_count = 0
             failed_users = []
+            skipped_users = []
             
             for index, token_data in enumerate(tokens, 1):
                 try:
                     access_token, refresh_token, username, last_refresh = token_data
+                    if not refresh_token:
+                        skipped_users.append(username)
+                        send_message_via_telegram(f"⚠️ Skipping @{username} - No refresh token found")
+                        continue
+                        
                     send_message_via_telegram(f"🔄 [{index}/{total_tokens}] Refreshing @{username}...")
                     
                     result = refresh_token_in_db(refresh_token, username)
@@ -87,9 +102,13 @@ def telegram_webhook():
                         failed_users.append(username)
                         send_message_via_telegram(f"❌ Failed to refresh @{username}")
                     else:
+                        new_access_token, new_refresh_token = result
                         update_last_refresh(username)
                         success_count += 1
-                        send_message_via_telegram(f"✅ Successfully refreshed @{username}")
+                        send_message_via_telegram(
+                            f"✅ Successfully refreshed @{username}\n"
+                            f"🔑 New Access Token: {new_access_token[:20]}..."
+                        )
                     
                     # Add delay if not the last token
                     if index < total_tokens:
@@ -97,7 +116,7 @@ def telegram_webhook():
                         send_message_via_telegram(f"⏱ Waiting {delay} seconds before next refresh... ({index}/{total_tokens})")
                         time.sleep(delay)
                 except Exception as e:
-                    send_message_via_telegram(f"❌ Error processing token {index}: {str(e)}")
+                    send_message_via_telegram(f"❌ Error processing token {index} (@{username}): {str(e)}")
                     failed_users.append(username)
                     continue
             
@@ -106,13 +125,20 @@ def telegram_webhook():
             summary += f"📊 Statistics:\n"
             summary += f"✨ Total tokens processed: {total_tokens}\n"
             summary += f"✅ Successfully refreshed: {success_count}\n"
-            summary += f"❌ Failed refreshes: {len(failed_users)}\n\n"
+            summary += f"❌ Failed refreshes: {len(failed_users)}\n"
+            summary += f"⚠️ Skipped (no refresh token): {len(skipped_users)}\n\n"
             
             if failed_users:
                 summary += f"Failed accounts:\n"
                 for username in failed_users:
                     summary += f"- @{username}\n"
-            else:
+            
+            if skipped_users:
+                summary += f"\nSkipped accounts:\n"
+                for username in skipped_users:
+                    summary += f"- @{username}\n"
+                    
+            if not failed_users and not skipped_users:
                 summary += "🎉 All tokens refreshed successfully!"
                 
             send_message_via_telegram(summary)
